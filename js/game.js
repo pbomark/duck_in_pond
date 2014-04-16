@@ -34,11 +34,15 @@ canvas.width = 512;
 canvas.height = 512;
 var centerX = canvas.width/2;
 var centerY = canvas.height/2;
-var radius = 200;
+var radius = 216;
 document.body.appendChild(canvas);
 var duckTheta = 0.1;
 var duckRadius = 0;
 var foxTheta = 0;
+var duckTravelDirection = 0;
+
+var newx = 0;
+var newy = 0;
 
 var caught = 0;
 var escapes = 0;
@@ -102,58 +106,82 @@ var reset = function () {
 
 // Update game objects
 var update = function (modifier) {
-	if (38 in keysDown) { // Player holding up
-		duck.y -= duck.speed * modifier;
-	}
-	if (40 in keysDown) { // Player holding down
-		duck.y += duck.speed * modifier;
-	}
-	if (37 in keysDown) { // Player holding left
-		duck.x -= duck.speed * modifier;
-	}
-	if (39 in keysDown) { // Player holding right
-		duck.x += duck.speed * modifier;
+
+	newx = duck.x;
+	newy = duck.y;
+	if (38 in keysDown||40 in keysDown||37 in keysDown||39 in keysDown){
+		if (38 in keysDown) { // Player holding up
+			newy -= duck.speed * modifier;
+		}
+		if (40 in keysDown) { // Player holding down
+			newy += duck.speed * modifier;
+		}
+		if (37 in keysDown) { // Player holding left
+			newx -= duck.speed * modifier;
+		}
+		if (39 in keysDown) { // Player holding right
+			newx += duck.speed * modifier;
+		}
+		// direction the duck travels in
+		duckTravelDirection = Math.atan2(duck.y - newy,duck.x - newx);
+
+		duck.x -=duck.speed*modifier*Math.cos(duckTravelDirection);
+		duck.y -=duck.speed*modifier*Math.sin(duckTravelDirection);
 	}
 
+	
+	// fox angle from center of pond
 	foxTheta2 = Math.atan2(fox.y-centerY+16,fox.x-centerX+16)
-	// fox radius is the global radius (200)
-
-
+	
+	// duck angle and distance from center of pond
 	duckTheta = Math.atan2(duck.y-centerY+16,duck.x-centerX+16)
 	duckRadius = Math.sqrt((duck.x-centerX+16)*(duck.x-centerX+16)+(duck.y-centerY+16)*(duck.y-centerY+16));
 	
 	// length traveled along the circle: L=theta*r which gives theta=L/r (the fox can travel at most [speed/radius])
 	var foxAngularSpeed=fox.speed/radius*modifier; //(1024/200=5.12 radians per step)
 
-
-	if (duckTheta > 0) {
+	
+	if (duckTheta > 0 && foxTheta2 > 0) {
 		if (foxTheta2 > duckTheta){
-			foxTheta -= foxAngularSpeed;
+			foxTheta2 -= foxAngularSpeed;
 		}else {
-			foxTheta += foxAngularSpeed;
+			foxTheta2 += foxAngularSpeed;
 		}
-	} else if (duckTheta < 0){
+	} else if (duckTheta < 0 && foxTheta2 < 0){
 		if (foxTheta2 < duckTheta){
-			foxTheta += foxAngularSpeed;
+			foxTheta2 += foxAngularSpeed;
 		}else {
-			foxTheta -= foxAngularSpeed;
+			foxTheta2 -= foxAngularSpeed;
+		}
+	} else if (duckTheta < 0 && foxTheta2 > 0){
+		if (foxTheta2 < duckTheta){
+			foxTheta2 -= foxAngularSpeed;
+		}else {
+			foxTheta2 += foxAngularSpeed;
+		}
+	} else if (duckTheta > 0 && foxTheta2 < 0){
+		if (foxTheta2 < duckTheta){
+			foxTheta2 -= foxAngularSpeed;
+		}else {
+			foxTheta2 += foxAngularSpeed;
 		}
 	}
-	fox.x = centerX -16 + radius * Math.cos(foxTheta);
-	fox.y = centerY -16 + radius * Math.sin(foxTheta);
+
+	fox.x = centerX -16 + radius * Math.cos(foxTheta2);
+	fox.y = centerY -16 + radius * Math.sin(foxTheta2);
 
 
 
 	// Are they touching?
 	if (
-		duck.x <= (fox.x + 32)
-		&& fox.x <= (duck.x + 32)
-		&& duck.y <= (fox.y + 32)
-		&& fox.y <= (duck.y + 32)
+		duck.x <= (fox.x + 20)
+		&& fox.x <= (duck.x + 20)
+		&& duck.y <= (fox.y + 20)
+		&& fox.y <= (duck.y + 20)
 	) {
 		++caught;
 		reset();
-	}else if (duckRadius >=200){
+	}else if (duckRadius >=radius){
 		++escapes;
 		reset();
 	}
@@ -172,13 +200,14 @@ var render = function () {
 	ctx.textAlign = "left";
 	ctx.textBaseline = "top";
 	//ctx.fillText("X: " + duck.x + "\\nY:" + duck.y +"\\nDuck theta: " + duckTheta, 32, 32);
-	ctx.wrapText("X: " + duck.x + "\nY:" + 
-					duck.y +"\n"+
-					"Duck theta: " + duckTheta+"\n"+
-					"Duck Radius: " + duckRadius +"\n"+
-					/*"Fox theta: " + foxTheta + "\n"+*/
-					"Fox theta2: " + foxTheta2 + "\n"+
+	ctx.wrapText(//"X: " + duck.x + "\n"+
+					//"Y:" + duck.y +"\n"+
+					//"Duck theta: " + duckTheta+"\n"+
+					//"Duck Radius: " + duckRadius +"\n"+
+					//"Fox theta: " + foxTheta + "\n"+
+					//"Fox theta: " + foxTheta2 + "\n"+
 					"Caught: "+caught+"\n"+
+					//"duckTravelDirection: "+duckTravelDirection+"\n"+
 					"Escapes: "+escapes, 32, 32,500,32);
 	ctx.beginPath();
 	
@@ -212,7 +241,7 @@ var main = function () {
 	var now = Date.now();
 	var delta = now - then;
 
-	update(delta / 5000);
+	update(delta / 3000);
 	render();
 
 	then = now;
