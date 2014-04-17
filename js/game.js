@@ -93,14 +93,14 @@ addEventListener("keyup", function (e) {
 // Reset the game when the player catches a fox
 var reset = function () {
 	duck.x = canvas.width / 2 - 16;
-	duck.y = canvas.height / 2 - 16;
+	duck.y = canvas.height / 2 - 15;
 
 	// Throw the fox somewhere on the screen randomly
 	//fox.x = 32 + (Math.random() * (canvas.width - 64));
 	//fox.y = 32 + (Math.random() * (canvas.height - 64));
-	foxTheta = Math.random()*Math.PI*2;
-	fox.x = centerX -16 + radius * Math.cos(foxTheta);
-	fox.y = centerY -16 + radius * Math.sin(foxTheta);
+	foxStartTheta = Math.random()*Math.PI*2;
+	fox.x = centerX -16 + radius * Math.cos(foxStartTheta);
+	fox.y = centerY -16 + radius * Math.sin(foxStartTheta);
 
 };
 
@@ -131,46 +131,39 @@ var update = function (modifier) {
 
 	
 	// fox angle from center of pond
-	foxTheta2 = Math.atan2(fox.y-centerY+16,fox.x-centerX+16)
+	foxTheta = Math.atan2(fox.y-centerY+16,fox.x-centerX+16)
 	
 	// duck angle and distance from center of pond
 	duckTheta = Math.atan2(duck.y-centerY+16,duck.x-centerX+16)
 	duckRadius = Math.sqrt((duck.x-centerX+16)*(duck.x-centerX+16)+(duck.y-centerY+16)*(duck.y-centerY+16));
 	
-	// length traveled along the circle: L=theta*r which gives theta=L/r (the fox can travel at most [speed/radius])
-	var foxAngularSpeed=fox.speed/radius*modifier; //(1024/200=5.12 radians per step)
-
-	
-	if (duckTheta > 0 && foxTheta2 > 0) {
-		if (foxTheta2 > duckTheta){
-			foxTheta2 -= foxAngularSpeed;
-		}else {
-			foxTheta2 += foxAngularSpeed;
-		}
-	} else if (duckTheta < 0 && foxTheta2 < 0){
-		if (foxTheta2 < duckTheta){
-			foxTheta2 += foxAngularSpeed;
-		}else {
-			foxTheta2 -= foxAngularSpeed;
-		}
-	} else if (duckTheta < 0 && foxTheta2 > 0){
-		if (foxTheta2 < duckTheta){
-			foxTheta2 -= foxAngularSpeed;
-		}else {
-			foxTheta2 += foxAngularSpeed;
-		}
-	} else if (duckTheta > 0 && foxTheta2 < 0){
-		if (foxTheta2 < duckTheta){
-			foxTheta2 -= foxAngularSpeed;
-		}else {
-			foxTheta2 += foxAngularSpeed;
-		}
+	if (foxTheta < 0){
+		foxTheta+=(Math.PI*2);
 	}
 
-	fox.x = centerX -16 + radius * Math.cos(foxTheta2);
-	fox.y = centerY -16 + radius * Math.sin(foxTheta2);
+	if (duckTheta < 0){
+		duckTheta+=(Math.PI*2);
+	}
 
-
+	// length traveled along the circle: L=theta*r which gives theta=L/r (the fox can travel at most [speed/radius])
+	var foxAngularSpeed=fox.speed/radius*modifier; //(1024/200=5.12 radians per step)
+	
+	if (duckTheta > foxTheta){ 
+		if (duckTheta-foxTheta > 3){
+			foxTheta -= foxAngularSpeed;
+		} else {
+			foxTheta += foxAngularSpeed;
+		}
+	} else { 
+		if (foxTheta-duckTheta > 3){
+			foxTheta += foxAngularSpeed;
+		} else {
+			foxTheta -= foxAngularSpeed;
+		}
+	}
+	
+	fox.x = centerX -16 + radius * Math.cos(foxTheta);
+	fox.y = centerY -16 + radius * Math.sin(foxTheta);
 
 	// Are they touching?
 	if (
@@ -205,9 +198,8 @@ var render = function () {
 					//"Duck theta: " + duckTheta+"\n"+
 					//"Duck Radius: " + duckRadius +"\n"+
 					//"Fox theta: " + foxTheta + "\n"+
-					//"Fox theta: " + foxTheta2 + "\n"+
-					"Caught: "+caught+"\n"+
 					//"duckTravelDirection: "+duckTravelDirection+"\n"+
+					"Caught: "+caught+"\n"+
 					"Escapes: "+escapes, 32, 32,500,32);
 	ctx.beginPath();
 	
